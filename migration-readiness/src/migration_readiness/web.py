@@ -10,6 +10,7 @@ from urllib.parse import urlparse
 
 from migration_readiness.catalog import UnknownMerchantError, known_merchant_ids
 from migration_readiness.orchestrator import MigrationOrchestrator
+from migration_readiness.scenarios import scenarios_for_api
 from migration_readiness.state import StateStore
 
 DEFAULT_REQUEST = (
@@ -180,6 +181,25 @@ PAGE = """<!DOCTYPE html>
     }
     .empty { color: var(--muted); }
     .err { color: var(--bad); white-space: pre-wrap; }
+    .scenarios {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 10px;
+      margin: 0 0 18px;
+    }
+    .scenario {
+      text-align: left;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      cursor: pointer;
+      font: inherit;
+      color: inherit;
+    }
+    .scenario:hover { border-color: var(--accent); }
+    .scenario .t { font-weight: 650; margin-bottom: 4px; }
+    .scenario .s { color: var(--muted); font-size: 12px; line-height: 1.4; }
   </style>
 </head>
 <body>
@@ -187,23 +207,19 @@ PAGE = """<!DOCTYPE html>
     <p class="brand">Migration Readiness</p>
     <h1>Payment migration preview</h1>
     <p class="lede">
-      Run the seven-agent workflow against a merchant request. This demo catalog
-      only includes <strong>ABC</strong> and <strong>ACME</strong>. Other names
-      (like andrew) are rejected with a clear error. The preview auto-approves
-      the human gate so you can inspect readiness, blockers, and the report.
+      Click a scenario to load and run it. Demo merchants:
+      <strong>ABC</strong> (not ready), <strong>RISK</strong> (at risk),
+      <strong>ACME</strong> (ready). Unknown names fail at intake.
     </p>
+
+    <div class="scenarios" id="scenarios"></div>
 
     <form id="run-form">
       <label for="request">Merchant request</label>
       <textarea id="request" name="request">__DEFAULT_REQUEST__</textarea>
       <div class="row">
-        <button type="button" class="example" data-request="ABC">Try ABC</button>
-        <button type="button" class="example" data-request="ACME">Try ACME</button>
-        <button type="button" class="example" data-request="Prepare Shopify merchant ABC for migration to the new payment integration.">Full ABC prompt</button>
-      </div>
-      <div class="row">
         <button type="submit" id="run-btn">Run migration readiness</button>
-        <span class="hint">Demo merchants only: ABC, ACME.</span>
+        <span class="hint">Auto-approves cutover validation for this preview.</span>
       </div>
     </form>
 
@@ -215,6 +231,7 @@ PAGE = """<!DOCTYPE html>
     const status = document.getElementById("status");
     const results = document.getElementById("results");
     const btn = document.getElementById("run-btn");
+    const scenariosEl = document.getElementById("scenarios");
 
     function esc(s) {
       return String(s)
@@ -280,19 +297,11 @@ PAGE = """<!DOCTYPE html>
       `;
     }
 
-    document.querySelectorAll("button.example").forEach((el) => {
-      el.addEventListener("click", () => {
-        document.getElementById("request").value = el.dataset.request || "";
-      });
-    });
-
-    form.addEventListener("submit", async (event) => {
-      event.preventDefault();
+    async function runRequest(request) {
       btn.disabled = true;
       status.textContent = "Running agents…";
       results.innerHTML = "";
       try {
-        const request = document.getElementById("request").value;
         const res = await fetch("/api/run", {
           method: "POST",
           headers: { "content-type": "application/json" },
@@ -307,7 +316,31 @@ PAGE = """<!DOCTYPE html>
       } finally {
         btn.disabled = false;
       }
+    }
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      await runRequest(document.getElementById("request").value);
     });
+
+    async function loadScenarios() {
+      const res = await fetch("/api/scenarios");
+      const data = await res.json();
+      scenariosEl.innerHTML = (data.scenarios || []).map((s) => `
+        <button type="button" class="scenario" data-request="${esc(s.request)}">
+          <div class="t">${esc(s.title)}</div>
+          <div class="s">${esc(s.summary)}</div>
+        </button>
+      `).join("");
+      scenariosEl.querySelectorAll("button.scenario").forEach((el) => {
+        el.addEventListener("click", async () => {
+          const request = el.dataset.request || "";
+          document.getElementById("request").value = request;
+          await runRequest(request);
+        });
+      });
+    }
+    loadScenarios();
   </script>
 </body>
 </html>
@@ -367,6 +400,15 @@ class PreviewHandler(BaseHTTPRequestHandler):
             return
         if path == "/health":
             self._send(200, b'{"ok":true}', "application/json")
+            return
+        if path == "/api/scenarios":
+            body = json.dumps(
+                {
+                    "scenarios": scenarios_for_api(),
+                    "known_merchants": known_merchant_ids(),
+                }
+            ).encode("utf-8")
+            self._send(200, body, "application/json")
             return
         self._send(404, b'{"error":"not found"}', "application/json")
 

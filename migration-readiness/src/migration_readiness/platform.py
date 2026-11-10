@@ -30,6 +30,10 @@ _REMAP: dict[PaymentMethod, tuple[str, str]] = {
         "needs_remap",
         "Map Shopify gift cards to platform stored-value wallets before cutover.",
     ),
+    "afterpay": (
+        "needs_remap",
+        "Remap Afterpay to the new platform BNPL connector before cutover.",
+    ),
     "boleto": (
         "unsupported",
         "Boleto is not available on the new platform. Offer Pix or remove LATAM boleto checkout.",

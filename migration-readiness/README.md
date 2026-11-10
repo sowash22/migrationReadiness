@@ -40,14 +40,16 @@ migration-readiness "Prepare Shopify merchant ABC for migration to the new payme
 # Approve cutover validation? [y/N]:
 ```
 
-## What ABC demonstrates
+## Scenarios to try
 
-- Unsupported **boleto**
-- Gift-card remap
-- Missing webhook HMAC + 3DS
-- Admin API upgrade required
-- Flaky webhook check that succeeds after retry
-- Final readiness band: **`not_ready`**
+| Merchant | Expected band | What it shows |
+| --- | --- | --- |
+| **ABC** | `not_ready` | Unsupported boleto, missing HMAC/3DS, blockers |
+| **RISK** | `at_risk` | No blockers, but remaps + API/settlement gaps |
+| **ACME** | `ready` | Clean config; safe to schedule cutover |
+| **andrew** | error | Unknown merchant rejected at intake |
+
+In the web preview, click a scenario card to load and run it.
 
 ## Web preview
 

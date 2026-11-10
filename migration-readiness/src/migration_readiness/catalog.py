@@ -55,8 +55,29 @@ _MERCHANTS: dict[str, MerchantConfig] = {
             three_ds_enabled=True,
             webhook_hmac_configured=True,
             settlement_currencies=["USD"],
-            refunds_api_version="v3",
+            refunds_api_version="2024-10",
             payout_schedule="daily",
+        ),
+    ),
+    "RISK": MerchantConfig(
+        merchant_id="RISK",
+        display_name="Shopify Merchant RISK",
+        commerce_platform="shopify",
+        region="US",
+        currencies=["USD", "EUR"],
+        old_integration="legacy-shopify-payments-bridge",
+        payment_methods=["card", "apple_pay", "gift_card", "afterpay"],
+        webhooks=["orders/paid", "refunds/create"],
+        api_dependencies=[
+            "Shopify Admin REST 2023-01",
+            "Shopify Payments Apps API",
+        ],
+        settings=MerchantSettings(
+            three_ds_enabled=True,
+            webhook_hmac_configured=True,
+            settlement_currencies=["USD"],
+            refunds_api_version="2024-10",
+            payout_schedule="weekly",
         ),
     ),
 }
@@ -81,7 +102,7 @@ class UnknownMerchantError(ValueError):
         known = ", ".join(known_merchant_ids())
         super().__init__(
             f'Unknown merchant "{hint}". Demo catalog only has: {known}. '
-            "Try ABC or ACME."
+            "Try ABC, RISK, or ACME."
         )
 
 
