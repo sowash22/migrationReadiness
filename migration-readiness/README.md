@@ -49,6 +49,16 @@ migration-readiness "Prepare Shopify merchant ABC for migration to the new payme
 - Flaky webhook check that succeeds after retry
 - Final readiness band: **`not_ready`**
 
+## Web preview
+
+```bash
+python3 -m migration_readiness.web --port 8765
+# open http://127.0.0.1:8765/
+```
+
+Click **Run migration readiness** to execute the agent pipeline and preview
+score, blockers, agent steps, and the report.
+
 ## Tests
 
 ```bash
