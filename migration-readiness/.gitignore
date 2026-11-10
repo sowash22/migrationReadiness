@@ -1,5 +1,14 @@
-node_modules
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+dist/
+build/
+*.egg-info/
+.migration-state/
+reports/
 .env
 .env.local
-.agent-serve
-memory

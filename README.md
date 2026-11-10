@@ -1,5 +1,5 @@
 # migrationReadiness
 
-Agent SDK project that orchestrates payment-platform migration readiness for merchants.
+Python multi-agent orchestrator for payment-platform migration readiness.
 
-See [`migration-readiness/README.md`](./migration-readiness/README.md) for the workflow, tools, and local run commands.
+See [`migration-readiness/README.md`](./migration-readiness/README.md).
