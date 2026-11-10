@@ -3,7 +3,11 @@ from __future__ import annotations
 from typing import Any
 
 from migration_readiness.agents.base import AgentResult
-from migration_readiness.catalog import extract_merchant_hint
+from migration_readiness.catalog import (
+    UnknownMerchantError,
+    extract_merchant_hint,
+    resolve_merchant,
+)
 from migration_readiness.platform import NEW_PLATFORM_NAME
 from migration_readiness.state import StateStore, utc_now
 from migration_readiness.types import IntakeData, MigrationState
@@ -23,6 +27,8 @@ class IntakeAgent:
         **_: Any,
     ) -> AgentResult:
         hint = extract_merchant_hint(request)
+        if resolve_merchant(hint) is None:
+            raise UnknownMerchantError(hint)
         cid = (case_id or hint).upper()
         current = store.load(cid) or store.create(cid)
         current.intake = IntakeData(

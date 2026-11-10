@@ -8,6 +8,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse
 
+from migration_readiness.catalog import UnknownMerchantError, known_merchant_ids
 from migration_readiness.orchestrator import MigrationOrchestrator
 from migration_readiness.state import StateStore
 
@@ -120,6 +121,13 @@ PAGE = """<!DOCTYPE html>
       padding: 10px 16px;
       cursor: pointer;
     }
+    button.example {
+      background: transparent;
+      color: var(--accent);
+      border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line));
+      font-weight: 500;
+      padding: 8px 12px;
+    }
     button:disabled { opacity: 0.6; cursor: wait; }
     .hint { color: var(--muted); font-size: 13px; }
     .stats {
@@ -179,17 +187,23 @@ PAGE = """<!DOCTYPE html>
     <p class="brand">Migration Readiness</p>
     <h1>Payment migration preview</h1>
     <p class="lede">
-      Run the seven-agent workflow against a merchant request. The preview uses
-      sample catalog data (ABC / ACME) and auto-approves the human gate so you
-      can inspect readiness, blockers, and the generated report.
+      Run the seven-agent workflow against a merchant request. This demo catalog
+      only includes <strong>ABC</strong> and <strong>ACME</strong>. Other names
+      (like andrew) are rejected with a clear error. The preview auto-approves
+      the human gate so you can inspect readiness, blockers, and the report.
     </p>
 
     <form id="run-form">
       <label for="request">Merchant request</label>
       <textarea id="request" name="request">__DEFAULT_REQUEST__</textarea>
       <div class="row">
+        <button type="button" class="example" data-request="ABC">Try ABC</button>
+        <button type="button" class="example" data-request="ACME">Try ACME</button>
+        <button type="button" class="example" data-request="Prepare Shopify merchant ABC for migration to the new payment integration.">Full ABC prompt</button>
+      </div>
+      <div class="row">
         <button type="submit" id="run-btn">Run migration readiness</button>
-        <span class="hint">Auto-approves cutover validation for this preview.</span>
+        <span class="hint">Demo merchants only: ABC, ACME.</span>
       </div>
     </form>
 
@@ -265,6 +279,12 @@ PAGE = """<!DOCTYPE html>
         </div>
       `;
     }
+
+    document.querySelectorAll("button.example").forEach((el) => {
+      el.addEventListener("click", () => {
+        document.getElementById("request").value = el.dataset.request || "";
+      });
+    });
 
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
@@ -364,6 +384,14 @@ class PreviewHandler(BaseHTTPRequestHandler):
             data = _run_case(request, auto_approve=auto_approve)
             body = json.dumps(data).encode("utf-8")
             self._send(200, body, "application/json")
+        except UnknownMerchantError as exc:
+            body = json.dumps(
+                {
+                    "error": str(exc),
+                    "known_merchants": known_merchant_ids(),
+                }
+            ).encode("utf-8")
+            self._send(400, body, "application/json")
         except Exception as exc:  # noqa: BLE001 - surface to UI
             body = json.dumps({"error": str(exc)}).encode("utf-8")
             self._send(500, body, "application/json")

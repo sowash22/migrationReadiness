@@ -69,6 +69,22 @@ def list_merchants() -> list[dict[str, str]]:
     ]
 
 
+def known_merchant_ids() -> list[str]:
+    return sorted(_MERCHANTS.keys())
+
+
+class UnknownMerchantError(ValueError):
+    """Raised when the request does not match a demo catalog merchant."""
+
+    def __init__(self, hint: str) -> None:
+        self.hint = hint
+        known = ", ".join(known_merchant_ids())
+        super().__init__(
+            f'Unknown merchant "{hint}". Demo catalog only has: {known}. '
+            "Try ABC or ACME."
+        )
+
+
 def resolve_merchant(hint: str) -> MerchantConfig | None:
     normalized = hint.strip().upper()
     if normalized in _MERCHANTS:

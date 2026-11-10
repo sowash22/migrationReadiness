@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
+from migration_readiness.catalog import UnknownMerchantError
 from migration_readiness.orchestrator import MigrationOrchestrator
 from migration_readiness.state import StateStore
 
@@ -57,6 +60,17 @@ def test_shopify_abc_end_to_end(tmp_path: Path) -> None:
         "validation",
         "reporting",
     ]
+
+
+def test_unknown_merchant_is_rejected(tmp_path: Path) -> None:
+    store = StateStore(tmp_path / "state")
+    orch = MigrationOrchestrator(
+        store=store,
+        reports_dir=tmp_path / "reports",
+        auto_approve=True,
+    )
+    with pytest.raises(UnknownMerchantError, match="andrew"):
+        orch.run("andrew")
 
 
 def test_approval_denial_stops_before_validation(tmp_path: Path) -> None:

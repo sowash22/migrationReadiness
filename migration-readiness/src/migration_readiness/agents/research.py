@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from migration_readiness.agents.base import AgentResult
-from migration_readiness.catalog import resolve_merchant
+from migration_readiness.catalog import UnknownMerchantError, resolve_merchant
 from migration_readiness.state import StateStore, utc_now
 from migration_readiness.types import MigrationState, ResearchData
 
@@ -21,10 +21,7 @@ class ResearchAgent:
             raise ValueError("Intake required before research.")
         merchant = resolve_merchant(state.intake.merchant_hint)
         if merchant is None:
-            raise ValueError(
-                f'No merchant catalog entry for "{state.intake.merchant_hint}". '
-                "Known demos: ABC, ACME."
-            )
+            raise UnknownMerchantError(state.intake.merchant_hint)
         state.research = ResearchData(
             merchant=merchant,
             notes=[
