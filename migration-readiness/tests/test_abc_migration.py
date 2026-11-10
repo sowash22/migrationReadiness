@@ -62,6 +62,12 @@ def test_shopify_abc_end_to_end(tmp_path: Path) -> None:
     ]
 
 
+def test_case_id_path_traversal_rejected(tmp_path: Path) -> None:
+    store = StateStore(tmp_path / "state")
+    with pytest.raises(ValueError, match="Invalid case id"):
+        store.create("../tmp/evil")
+
+
 def test_unknown_merchant_is_rejected(tmp_path: Path) -> None:
     store = StateStore(tmp_path / "state")
     orch = MigrationOrchestrator(

@@ -54,12 +54,26 @@ In the web preview, click a scenario card to load and run it.
 ## Web preview
 
 ```bash
+python3 -m pip install -r requirements.txt
 python3 -m migration_readiness.web --port 8765
 # open http://127.0.0.1:8765/
 ```
 
-Click **Run migration readiness** to execute the agent pipeline and preview
-score, blockers, agent steps, and the report.
+Click a scenario card (or **Run migration readiness**) to execute the agent
+pipeline and preview score, blockers, agent steps, and the report.
+
+## Deploy on Vercel
+
+1. Import `https://github.com/sowash22/migrationReadiness` in Vercel.
+2. Use branch `cursor/migration-readiness-agent-951b` (or `main` after merge).
+3. Keep **Root Directory** as repo root (uses `/api/index.py`), **or** set it to
+   `migration-readiness`.
+4. Framework Preset: Other. Install Command can stay default
+   (`pip install -r requirements.txt`).
+5. Deploy.
+
+The app is a Flask serverless function (`api/index.py`). Do not point Vercel at
+the old local `ThreadingHTTPServer` command.
 
 ## Tests
 
