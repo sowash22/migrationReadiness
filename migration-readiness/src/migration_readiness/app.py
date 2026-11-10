@@ -7,7 +7,7 @@ import shutil
 import tempfile
 from pathlib import Path
 
-from flask import Flask, Response, jsonify, request
+from flask import Flask, Response, jsonify, request, redirect
 
 from migration_readiness.catalog import UnknownMerchantError, known_merchant_ids
 from migration_readiness.orchestrator import MigrationOrchestrator
@@ -60,15 +60,12 @@ def _run_case(user_request: str, auto_approve: bool = True) -> dict:
 def create_app() -> Flask:
     app = Flask(__name__)
 
-    @app.get("/")
-    def index() -> Response:
+    def page() -> Response:
         return Response(PAGE, mimetype="text/html; charset=utf-8")
 
-    @app.get("/health")
     def health():
-        return jsonify({"ok": True})
+        return jsonify({"ok": True, "service": "migration-readiness"})
 
-    @app.get("/api/scenarios")
     def scenarios():
         return jsonify(
             {
@@ -77,7 +74,6 @@ def create_app() -> Flask:
             }
         )
 
-    @app.post("/api/run")
     def run():
         if request.content_length and request.content_length > MAX_BODY_BYTES:
             return jsonify({"error": "Request body too large."}), 413
@@ -106,6 +102,34 @@ def create_app() -> Flask:
             return jsonify({"error": str(exc)}), 400
         except Exception as exc:  # noqa: BLE001
             return jsonify({"error": str(exc)}), 500
+
+    # Primary routes
+    app.add_url_rule("/", view_func=page, methods=["GET"])
+    app.add_url_rule("/index.html", view_func=page, methods=["GET"])
+    app.add_url_rule("/health", view_func=health, methods=["GET"])
+    app.add_url_rule("/api/scenarios", view_func=scenarios, methods=["GET"])
+    app.add_url_rule("/api/run", view_func=run, methods=["POST"])
+
+    # Vercel /api-prefix fallbacks when the function is mounted under /api
+    app.add_url_rule("/api", view_func=lambda: redirect("/", code=307), methods=["GET"])
+    app.add_url_rule("/api/", view_func=page, methods=["GET"])
+    app.add_url_rule("/api/health", view_func=health, methods=["GET"])
+    app.add_url_rule("/api/api/scenarios", view_func=scenarios, methods=["GET"])
+    app.add_url_rule("/api/api/run", view_func=run, methods=["POST"])
+
+    @app.errorhandler(404)
+    def not_found(_err):
+        return (
+            jsonify(
+                {
+                    "error": "not_found",
+                    "path": request.path,
+                    "method": request.method,
+                    "hint": "Expected /, /health, /api/scenarios, or POST /api/run",
+                }
+            ),
+            404,
+        )
 
     return app
 

@@ -65,15 +65,14 @@ pipeline and preview score, blockers, agent steps, and the report.
 ## Deploy on Vercel
 
 1. Import `https://github.com/sowash22/migrationReadiness` in Vercel.
-2. Use branch `cursor/migration-readiness-agent-951b` (or `main` after merge).
-3. Keep **Root Directory** as repo root (uses `/api/index.py`), **or** set it to
-   `migration-readiness`.
-4. Framework Preset: Other. Install Command can stay default
-   (`pip install -r requirements.txt`).
-5. Deploy.
+2. Production branch: `main`.
+3. **Root Directory:** leave as repo root (uses root `app.py`).
+4. Framework Preset: **Flask** (or Other). Install from `requirements.txt`.
+5. Redeploy after pulling the latest `app.py` entrypoint fix.
 
-The app is a Flask serverless function (`api/index.py`). Do not point Vercel at
-the old local `ThreadingHTTPServer` command.
+Entrypoint is root `app.py` (`[tool.vercel] entrypoint = "app:app"`). Do not use
+the local `python3 -m migration_readiness.web` command as a Vercel build/start
+script.
 
 ## Tests
 
